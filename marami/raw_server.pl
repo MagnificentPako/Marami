@@ -30,9 +30,7 @@ handle_service(Handler, StreamPair, SSL) :-
 handle_service_ssl(Handler, In, Out) :-
     read_string(In, "\r\n", "", _, RawUrl),
     parse_url(RawUrl, Url),
-    member(path(RawPath), Url),
-    split_string(RawPath, "/", "", Path),
-    Data = [path(Path), url(Url), raw(Req), raw_url(RawUrl)],
+    Data = [url(Url), raw(RawUrl)],
     with_output_to(Out, call(Handler, Data)).
 
 close_both(In, Out) :-

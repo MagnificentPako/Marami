@@ -11,12 +11,18 @@ main_page([ heading("Marami Test Server")
           , link("/input", "Input Status Codes")
           ]).
 
+% Doesn't do much other than displaying the main page. Nothing to see here.
 handler(Data) :-
     is_path(Data, /),
     status(success("text/gemini; lang=en")),
     main_page(Page),
     write_gemini(Page).
 
+% Just some basic atom splitting right now; My intention is to make matching 
+% agains the path segments possible soon. Here's what that might look like:
+%
+% member(segments(["foo", Bar, "baz"]), Data), string_length(Bar, 5).
+% to match only paths like /foo/abcde/baz
 handler(Data) :-
     member(url(Url), Data),
     member(path(Path), Url),
@@ -27,11 +33,15 @@ handler(Data) :-
     status(success("text/plain")),
     writeln(S).
 
+% Making use of (SWI) Prolog's make/0 to consult all source files that have been
+% changed. Hot-reloading built right into the language!
 handler(Data) :-
     is_path(Data, '/reload'),
     status(redirect(/)),
     make.
 
+% Double the flex: Marami generates text/gemini from a DCG representation and 
+% can also prettyprint the AST itself
 handler(Data) :-
     is_path(Data, '/dcg'),
     status(success("text/gemini; lang=en")),
@@ -41,6 +51,7 @@ handler(Data) :-
                  , pre(S, "prolog")
                  ]).
 
+% Generic endpoint to showcase the formatting capabilities of text/gemini
 handler(Data) :-
     is_path(Data, '/gemini_text'),
     status(success("text/gemini; lang=en")),
@@ -52,12 +63,12 @@ handler(Data) :-
                  , quote("A random quote")
                  ]).
 
+% Test the input status code and display whatever the user supplied
 handler(Data) :-
     is_path(Data, '/input'),
     member(url(Url), Data),
     \+ member(search(_), Url),
     status(input(1, "Testing sensible input")).
-
 handler(Data) :-
     is_path(Data, '/input'),
     member(url(Url), Data),
