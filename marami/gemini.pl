@@ -1,3 +1,5 @@
+:- module(gemini, [status/1]).
+
 status(input(Num, Meta)) :-
     proper_secondary_status(Num),
     write_status(1, Num, Meta).

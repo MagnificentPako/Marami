@@ -1,8 +1,9 @@
 :- initialization(main, main).
 
-:- [marami/marami].
-:- [handler].
+:- use_module('./marami/marami').
+
 :- [config].
+:- [handler].
 
 main :-
     port(Port),

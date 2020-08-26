@@ -1,7 +1,7 @@
-:- use_module(library(dcg/basics)).
+:- module(gemtext, [ write_gemtext/1 ]).
 
-paragraph(P) -->
-    P.
+blank -->
+    "".
 
 heading(Heading) -->
     heading(Heading, 1).
@@ -32,22 +32,22 @@ quote(Text) -->
     ">",
     Text.
 
-unordered_list([D|T]) -->
+ul([D|T]) -->
     "* ",
     D,
     "\r\n",
-    unordered_list(T).
-unordered_list([]) --> 
+    ul(T).
+ul([]) --> 
     [].
 
-gemini_text([D|T]) -->
+gemtext([D|T]) -->
     D, !,
     "\r\n",
-    gemini_text(T).
-gemini_text([]) -->
+    gemtext(T).
+gemtext([]) -->
     [].
 
-write_gemini(G) :-
-    phrase(gemini_text(G), X),
+write_gemtext(G) :-
+    phrase(gemtext(G), X),
     string_codes(Y, X),
     write(Y).

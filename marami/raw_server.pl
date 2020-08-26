@@ -1,3 +1,5 @@
+:- module(raw_server, [create_server/4]).
+
 dispatch(AcceptFd, Handler, SSL) :-
     tcp_accept(AcceptFd, Socket, Peer),
     thread_create(process_client(Socket, Peer, Handler, SSL), _, [ detached(true) ]),
