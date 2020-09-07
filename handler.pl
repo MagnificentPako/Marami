@@ -1,16 +1,18 @@
-:- use_module(library(filesex)).
-:- use_module(library(readutil)).
+:- use_module(library(pprint)).
 :- use_module('./marami/marami').
-:- [config].
 
-main_page([ pre("\t┏━╸┏━╸┏┳┓╻┏┓╻╻ ╻ ╻╺┳╸┏━╸\r\n\t┃╺┓┣╸ ┃┃┃┃┃┗┫┃ ┃╻┃ ┃ ┣╸\r\n\t┗━┛┗━╸╹ ╹╹╹ ╹╹╹┗┻┛ ╹ ╹ ")
+main_page([ heading("Marami Test Server")
+          , heading("What is Marami", 2)
+          , "Marami is a simple Gemini server written in SWI-Prolog."
           , blank
-          , "This capsule serves two purposes: showing off what Marami can do and letting people host some small stuff on here tilde-style."
+          , "It supports all the fun stuff, of course."
           , blank
-          , heading("Useful Links")
-          , link("https://github.com/MagnificentPako/Marami", "Marami")
-          , link("https://github.com/MagnificentPako/gemini.wtf", "gemini.wtf Source")
-          , link("gemini://localhost/~paul", "~paul")
+          , heading("Examples", 2)
+          , link("/dcg", "Page Generation using DCGs")
+          , link("/gemini_text", "Generic text/gemini Showcase")
+          , link("/pattern/matching", "URL Pattern Matching")
+          , link("/input", "Input Status Codes")
+          , link("/reload", "Reload ")
           ]).
 
 % Doesn't do much other than displaying the main page. Nothing to see here.
@@ -20,56 +22,65 @@ handler(Data) :-
     main_page(Page),
     write_gemtext(Page).
 
+% Just some basic atom splitting right now; My intention is to make matching 
+% agains the path segments possible soon. Here's what that might look like:
+%
+% member(segments(["foo", Bar, "baz"]), Data), string_length(Bar, 5).
+% to match only paths like /foo/abcde/baz
 handler(Data) :-
-    is_path(Data, '/reload'),
-    status(redirect("/")),
-    make.
-
-handler(Data) :-
-    debug,
-    \+ is_path(Data, /),
-    base_path(BasePathRaw),
     member(url(Url), Data),
     member(path(Path), Url),
-    string_concat("/", RelPathRaw, Path),
-    split_string(RelPathRaw, "/", "", SplitPath),
-    [Username|_] = SplitPath,
-    string_concat(Username, RelPath, RelPathRaw),
-    proper_base(BasePathRaw, Username, RelPath, Full),
-    serve_file(Full).
-
-% Redirect bad paths to /
-handler(Data) :-
-    status(redirect(/)).
-
-serve_file(Path) :-
-    exists_file(Path),
-    !,
-    send_file(Path).
-
-serve_file(Path) :-
-    exists_directory(Path),
-    directory_file_path(Path, "index.gmi", FullPath),
-    exists_file(FullPath),
-    !,
-    send_file(FullPath).
-
-serve_file(Path) :-
-    format(string(S), "Not found: ~w", Path),
-    status(permanent_failure(1, S)).
-
-send_file(Path) :-
-    read_file_to_string(Path, S, [ encoding(utf8) ]),
-    file_base_name(Path, FileName),
-    file_mime_type(FileName, Mime),
-    status(success(Mime)),
+    atom_concat('/pattern', Pattern, Path),
+    atom_length(Pattern, L),
+    L > 0,
+    format(string(S), "Matched '~w'", Pattern),
+    status(success("text/plain")),
     writeln(S).
 
-proper_base(Base, Username, "", Full) :-
-    directory_file_path(Base, Username, BasePathU),
-    directory_file_path(BasePathU, "public", Full).
-proper_base(Base, Username, Rel, Full) :-
-    string_concat("/", RelPath, Rel),
-    directory_file_path(Base, Username, BasePathU),
-    directory_file_path(BasePathU, "public", BasePath),
-    directory_file_path(BasePath, RelPath, Full).
+% Making use of (SWI) Prolog's make/0 to consult all source files that have been
+% changed. Hot-reloading built right into the language!
+handler(Data) :-
+    is_path(Data, '/reload'),
+    status(redirect(/)),
+    make.
+
+% Double the flex: Marami generates text/gemini from a DCG representation and 
+% can also prettyprint the AST itself
+handler(Data) :-
+    is_path(Data, '/dcg'),
+    status(success("text/gemini; lang=en")),
+    main_page(Page),
+    with_output_to(string(S), print_term(Page, [output(current_output)])),
+    write_gemtext([ heading("DCG for the main page")
+                 , pre(S, "prolog")
+                 ]).
+
+% Generic endpoint to showcase the formatting capabilities of text/gemini
+handler(Data) :-
+    is_path(Data, '/gemini_text'),
+    status(success("text/gemini; lang=en")),
+    write_gemtext([ heading("A Heading")
+                 , heading("Followed by a sub-heading", 2)
+                 , "And a paragraph"
+                 , heading("Lists", 1)
+                 , unordered_list(["List", "Elements", "Such", "Wow"])
+                 , quote("A random quote")
+                 ]).
+
+% Test the input status code and display whatever the user supplied
+handler(Data) :-
+    is_path(Data, '/input'),
+    member(url(Url), Data),
+    \+ member(search(_), Url),
+    status(input(1, "Testing sensible input")).
+handler(Data) :-
+    is_path(Data, '/input'),
+    member(url(Url), Data),
+    member(search(Search), Url),
+    status(success("text/plain")),
+    format(string(S), "The input was '~w'", Search),
+    writeln(S).
+
+% Redirect bad paths to /
+handler(_) :-
+    status(redirect(/)).

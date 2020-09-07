@@ -30,8 +30,6 @@ handle_service(Handler, StreamPair, SSL) :-
                       , close_both(In, Out)).
 
 handle_service_ssl(Handler, In, Out) :-
-    set_stream(In, encoding(utf8)),
-    set_stream(Out, encoding(utf8)),
     read_string(In, "\r\n", "", _, RawUrl),
     parse_url(RawUrl, Url),
     Data = [url(Url), raw(RawUrl)],
