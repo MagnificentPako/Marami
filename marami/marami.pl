@@ -9,7 +9,8 @@
 :- use_module('./raw_server').
 :- use_module('./gemini').
 :- use_module('./gemtext').
-:- reexport([ util, raw_server, gemini, gemtext ]).
+:- use_module('./mime').
+:- reexport([ util, raw_server, gemini, gemtext, mime ]).
 
 %!	marami
 %
